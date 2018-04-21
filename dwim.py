@@ -7,8 +7,20 @@ import sys
 import parameters
 import numpy
 import os
+import getopt
+
+options, remainder = getopt.getopt(sys.argv[1:], 'r:', [
+                                                         'rate=',
+                                                         ])
+
+
 
 sample_rate = 2000000
+
+for opt, arg in options:
+    if opt in ('-r', '--rate'):
+        sample_rate = int(arg)
+
 dp = parameters.dab_parameters(1, sample_rate)
 prs = make_prs.modulate_prs(sample_rate, True)
 frame_length = int(sample_rate * 96e-3)
