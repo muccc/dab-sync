@@ -23,20 +23,21 @@ def auto_correlate(signal, dp, sample_rate):
     return fine_offset
 
 
-sample_rate = 2000000
+if __name__ == "__main__":
+    sample_rate = 2000000
 
-#Tu = int(2048 * (sample_rate/2048000.))
-Tu = sample_rate / 1000
+    #Tu = int(2048 * (sample_rate/2048000.))
+    Tu = sample_rate / 1000
 
-signal = iq.read(sys.argv[1])
+    signal = iq.read(sys.argv[1])
 
-time_shifted_signal = signal[Tu:]
+    time_shifted_signal = signal[Tu:]
 
-auto_correlated = [0] * len(time_shifted_signal)
-for i in range(len(time_shifted_signal)):
-    #auto_correlated[i] = numpy.angle(signal[i] * numpy.conj(time_shifted_signal[i]))/ 2 / 3.14 * 1000
-    auto_correlated[i] = numpy.angle(signal[i] * numpy.conj(time_shifted_signal[i]))/ 2 / 3.14 * Tu / 2
+    auto_correlated = [0] * len(time_shifted_signal)
+    for i in range(len(time_shifted_signal)):
+        #auto_correlated[i] = numpy.angle(signal[i] * numpy.conj(time_shifted_signal[i]))/ 2 / 3.14 * 1000
+        auto_correlated[i] = numpy.angle(signal[i] * numpy.conj(time_shifted_signal[i]))/ 2 / 3.14 * Tu / 2
 
-#print auto_correlated
+    #print auto_correlated
 
-iq.write("/tmp/bar.cfile", auto_correlated)
+    iq.write("/tmp/bar.cfile", auto_correlated)
