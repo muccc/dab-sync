@@ -21,11 +21,11 @@ def estimate_prs_fine(signal, prs):
     beta = numpy.abs(c[beta_index])
     gamma = numpy.abs(c[gamma_index])
     correction = 0.5 * (alpha - gamma) / (alpha - 2*beta + gamma)
-    prs_middle = prs_middle + correction
+    prs_middle_fine = prs_middle + correction
 
     #plt.plot(numpy.abs(c))
     #plt.show()
-    return prs_middle - len(prs) / 2, numpy.abs(c[prs_middle]), numpy.angle(c[prs_middle])
+    return prs_middle_fine - len(prs) / 2, numpy.abs(c[prs_middle]), numpy.angle(c[prs_middle])
 
 
 def estimate_prs(signal, prs):
