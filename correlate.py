@@ -6,6 +6,46 @@ import matplotlib.pyplot as plt
 import scipy.signal
 import cmath
 
+def delay(signal, delay):
+
+    sinc_vect = [0] * 21
+    for i in range(21):
+        sinc_vect[i] = numpy.sinc(numpy.pi * (10.0 - i - delay))
+    return numpy.convolve(signal, sinc_vect, 'same')
+
+def estimate_prs_fine_delay(signal, prs, delay_estimate):
+    #c = scipy.signal.fftconvolve(signal, numpy.conj(prs), 'same')
+    #delay_estimate = 0
+    print "delay_estimate", delay_estimate
+    signal = delay(signal, delay_estimate)
+    c = numpy.correlate(signal, prs, 'same')
+    prs_middle = numpy.argmax(numpy.abs(c))
+
+    #Interpolate the result to get a finer resolution.
+    # Based on http://www.dsprelated.com/dspbooks/sasp/Quadratic_Interpolation_Spectral_Peaks.html
+
+    alpha_index = prs_middle - 1
+    beta_index = prs_middle
+    gamma_index = prs_middle + 1
+    alpha = numpy.abs(c[alpha_index])
+    beta = numpy.abs(c[beta_index])
+    gamma = numpy.abs(c[gamma_index])
+
+    #correction = -0.5 * alpha/beta + 0.5 * gamma/beta
+    #correction = -alpha / (alpha + beta) + gamma / (gamma + beta)
+    correction = 0.5 * (alpha - gamma) / (alpha - 2*beta + gamma)
+    print "correction", correction
+    correction += delay_estimate
+    print "correction + delay", correction
+
+    prs_middle_fine = prs_middle + correction
+    #print prs_middle - len(prs) / 2, "% .02f" % correction,
+
+    #plt.plot(numpy.abs(c))
+    #plt.show()
+    return prs_middle_fine - len(prs) / 2, numpy.abs(c[prs_middle]), numpy.angle(c[prs_middle]), correction
+
+
 def estimate_prs_fine(signal, prs):
     #c = scipy.signal.fftconvolve(signal, numpy.conj(prs), 'same')
     c = numpy.correlate(signal, prs, 'same')
