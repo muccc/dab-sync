@@ -8,6 +8,7 @@ import parameters
 import numpy
 import os
 import getopt
+import matplotlib.pyplot as plt
 
 options, remainder = getopt.getopt(sys.argv[1:], 'r:', [
                                                          'rate=',
@@ -54,11 +55,26 @@ prs_len=len(prs)
 shift_signal = numpy.exp(complex(0,-1)*numpy.arange(prs_len)*2*numpy.pi*freq_offset/float(sample_rate))
 
 print len(signal), frame_length
+
+sample_offset = 0
+prev_start = 0
+starts = []
 while True:
     signal = iq.read(f, count=prs_len)
     if len(signal)!=prs_len: break
+    sample_offset += prs_len
 
     signal = signal * shift_signal
-    start2 = correlate.estimate_prs(signal[:len(prs)], prs)
-    print start2
-    f.seek((frame_length-prs_len+1*start2[0])*8,os.SEEK_CUR)
+    relative_start, cor, phase = correlate.estimate_prs_fine(signal[:len(prs)], prs)
+    print relative_start
+    start = sample_offset + relative_start
+    if prev_start: starts.append(start - prev_start)
+    print start - prev_start
+    prev_start = start
+
+    offset = frame_length-prs_len+1*int(relative_start+0.5)
+    f.seek(offset*8,os.SEEK_CUR)
+    sample_offset += offset
+
+plt.plot(starts)
+plt.show()
