@@ -8,8 +8,8 @@ def write(file_name, signal):
         signal=numpy.asarray(signal,dtype=numpy.complex64)
     signal.tofile(file_name)
 
-def read(file_name):
-    signal = numpy.fromfile(file_name, dtype=numpy.complex64)
+def read(file_name, count=-1):
+    signal = numpy.fromfile(file_name, dtype=numpy.complex64, count=count)
     return signal
 
 def shift(signal, sample_rate, offset):
