@@ -12,6 +12,9 @@ def read(file_name, count=-1):
     signal = numpy.fromfile(file_name, dtype=numpy.complex64, count=count)
     return signal
 
+def skip(file_name, count):
+    file_name.read(count*8)
+
 def shift(signal, sample_rate, offset):
     shift_signal = numpy.exp(complex(0,-1)*numpy.arange(len(signal))*2*numpy.pi*offset/float(sample_rate))
     return  signal * shift_signal

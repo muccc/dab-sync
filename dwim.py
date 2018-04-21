@@ -48,7 +48,7 @@ signal = signal * shift_signal
 iq.write("/tmp/bar.cfile", signal)
 
 print start
-f.seek(sample_offset*8,os.SEEK_CUR)
+iq.skip(f, sample_offset)
 
 prs_len=len(prs)
 
@@ -73,7 +73,7 @@ while True:
     prev_start = start
 
     offset = frame_length-prs_len+1*int(relative_start+0.5)
-    f.seek(offset*8,os.SEEK_CUR)
+    iq.skip(f, offset)
     sample_offset += offset
 
 plt.plot(starts)
