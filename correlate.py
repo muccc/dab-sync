@@ -6,6 +6,28 @@ import matplotlib.pyplot as plt
 import scipy.signal
 import cmath
 
+def estimate_prs_fine(signal, prs):
+    #c = scipy.signal.fftconvolve(signal, numpy.conj(prs), 'same')
+    c = numpy.correlate(signal, prs, 'same')
+    prs_middle = numpy.argmax(numpy.abs(c))
+
+    #Interpolate the result to get a finer resolution.
+    # Based on http://www.dsprelated.com/dspbooks/sasp/Quadratic_Interpolation_Spectral_Peaks.html
+
+    alpha_index = prs_middle - 1
+    beta_index = prs_middle
+    gamma_index = prs_middle + 1
+    alpha = numpy.abs(c[alpha_index])
+    beta = numpy.abs(c[beta_index])
+    gamma = numpy.abs(c[gamma_index])
+    correction = 0.5 * (alpha - gamma) / (alpha - 2*beta + gamma)
+    prs_middle = prs_middle + correction
+
+    #plt.plot(numpy.abs(c))
+    #plt.show()
+    return prs_middle - len(prs) / 2, numpy.abs(c[prs_middle]), numpy.angle(c[prs_middle])
+
+
 def estimate_prs(signal, prs):
     #c = scipy.signal.fftconvolve(signal, numpy.conj(prs), 'same')
     c = numpy.correlate(signal, prs, 'same')
