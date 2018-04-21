@@ -10,8 +10,9 @@ import os
 import getopt
 import matplotlib.pyplot as plt
 
-options, remainder = getopt.getopt(sys.argv[1:], 'r:', [
+options, remainder = getopt.getopt(sys.argv[1:], 'r:f:', [
                                                          'rate=',
+                                                         'format=',
                                                          ])
 
 
@@ -21,6 +22,8 @@ sample_rate = 2000000
 for opt, arg in options:
     if opt in ('-r', '--rate'):
         sample_rate = int(arg)
+    if opt in ('-f', '--format'):
+        iq.set_type(arg)
 
 dp = parameters.dab_parameters(1, sample_rate)
 prs = make_prs.modulate_prs(sample_rate, True)
