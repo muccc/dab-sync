@@ -10,7 +10,7 @@ def delay(signal, delay):
 
     sinc_vect = [0] * 21
     for i in range(21):
-        sinc_vect[i] = numpy.sinc(numpy.pi * (10.0 - i - delay))
+        sinc_vect[i] = numpy.sinc(10.0 - i - delay)
     return numpy.convolve(signal, sinc_vect, 'same')
 
 def estimate_prs_fine_delay(signal, prs, delay_estimate):
