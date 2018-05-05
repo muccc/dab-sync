@@ -18,21 +18,22 @@ options, remainder = getopt.getopt(sys.argv[1:], 'r:f:', [
 
 
 sample_rate = 2000000
+sample_type = 'c32'
 
 for opt, arg in options:
     if opt in ('-r', '--rate'):
         sample_rate = int(arg)
     if opt in ('-f', '--format'):
-        iq.set_type(arg)
+        sample_type = arg
 
 dp = parameters.dab_parameters(1, sample_rate)
 prs = make_prs.modulate_prs(sample_rate, True)
 frame_length = int(sample_rate * 96e-3)
-sample_offset = 0
 
 f = open(remainder[0], "rb")
-signal = iq.read(f, count=frame_length)
+reader = iq.IQReader(f, sample_type)
 
+signal, sample_offset = reader.read(count=frame_length)
 start = find_start.find_start(signal, sample_rate)
 signal = signal[start:]
 sample_offset += start
@@ -51,7 +52,7 @@ signal = signal * shift_signal
 iq.write("/tmp/bar.cfile", signal)
 
 print start
-iq.skip(f, sample_offset)
+reader.skip(sample_offset)
 
 prs_len=len(prs)
 
@@ -63,9 +64,8 @@ sample_offset = 0
 prev_start = 0
 starts = []
 while True:
-    signal = iq.read(f, count=prs_len)
+    signal, sample_offset = reader.read(count=prs_len)
     if len(signal)!=prs_len: break
-    sample_offset += prs_len
 
     signal = signal * shift_signal
     relative_start, cor, phase = correlate.estimate_prs_fine(signal[:len(prs)], prs)
@@ -76,8 +76,7 @@ while True:
     prev_start = start
 
     offset = frame_length-prs_len+1*int(relative_start+0.5)
-    iq.skip(f, offset)
-    sample_offset += offset
+    reader.skip(offset)
 
 plt.plot(starts)
 plt.show()
