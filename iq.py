@@ -18,6 +18,8 @@ class IQReader(object):
         self.offset += count
         if self.sample_type=='c32':
             return self.read32(count), sample_offset
+        elif self.sample_type=='c16':
+            return self.read16(count), sample_offset
         elif self.sample_type=='c8':
             return self.read8(count), sample_offset
         else:
@@ -25,6 +27,14 @@ class IQReader(object):
 
     def read32(self, count=-1):
         signal = numpy.fromfile(self.f, dtype=numpy.complex64, count=count)
+        return signal
+
+    def read16(self, count=-1):
+        if count>0: count=count*2
+        signal = numpy.fromfile(self.f, dtype=numpy.int16, count=count)
+        signal = signal.astype(numpy.float32) # convert to float
+        signal = signal/32768.                # Normalize
+        signal = signal.view(numpy.complex64) # reinterpret as complex
         return signal
 
     def read8(self, count=-1):
@@ -39,6 +49,8 @@ class IQReader(object):
         self.offset += count
         if self.sample_type=='c32':
             self.skipN(count*8)
+        elif self.sample_type=='c16':
+            self.skipN(count*4)
         elif self.sample_type=='c8':
             self.skipN(count*2)
         else:
