@@ -7,10 +7,11 @@ import scipy.signal
 import cmath
 
 def delay(signal, delay):
-
-    sinc_vect = [0] * 21
-    for i in range(21):
-        sinc_vect[i] = numpy.sinc(10.0 - i - delay)
+    if delay == 0:
+        return signal
+    sinc_vect = [0] * 201
+    for i in range(201):
+        sinc_vect[i] = numpy.sinc(100.0 - i - delay)
     return numpy.convolve(signal, sinc_vect, 'same')
 
 def estimate_prs_fine_delay(signal, prs, delay_estimate):
