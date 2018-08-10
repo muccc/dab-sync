@@ -33,12 +33,6 @@ prs = make_prs.modulate_prs(sample_rate, True)
 frame_length = int(sample_rate * 96e-3)
 
 
-error_filter =[0] * 10
-def filter(error):
-    global error_filter
-    error_filter = error_filter[1:] + [error]
-    return sum(error_filter)/10
-
 for filename in remainder:
     f = open(filename, "rb")
     reader = iq.IQReader(f, sample_type)
