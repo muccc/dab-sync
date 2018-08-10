@@ -35,6 +35,9 @@ class IQReader(object):
         self.integer_offset += count
 
         samples = self._read(count)
+
+        if len(samples) != count:
+            return [], 0, 0
         samples = numpy.concatenate(([self.sample_cache], samples))
 
         self.sample_cache = samples[-1]
@@ -55,7 +58,10 @@ class IQReader(object):
         count = target_integer_offset - current_integer_offset
         if count > 0:
             self._skip(count - 1)
-            self.sample_cache = self._read(1)[0]
+            try:
+                self.sample_cache = self._read(1)[0]
+            except:
+                pass
 
 
         self.integer_offset = target_integer_offset
