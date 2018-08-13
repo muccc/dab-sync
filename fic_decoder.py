@@ -78,4 +78,5 @@ prbs = bitstring.BitArray('0b' + ''.join([chr(x+0x30) for x in dp.prbs(dp.energy
 foo = (pruned ^ prbs)
 
 print foo.bin
+open('test.fib', 'w').write(foo.tobytes())
 
