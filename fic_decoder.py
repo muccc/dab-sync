@@ -55,28 +55,35 @@ fic_sym2 = decoder.decode_symbol(symbol_samples)
 fics = fic_sym0 + fic_sym1 + fic_sym2
 #fics = fic_sym0
 
-fib0 = fics[:dp.fic_punctured_codeword_length]
+fibs = ''
+for fib_start in range(0, len(fics), dp.fic_punctured_codeword_length):
+    fib = fics[fib_start:fib_start+dp.fic_punctured_codeword_length]
 
-#print len(fib0)
+    #print len(fib)
+    #print fib.bin
 
-fib0_unpuctured = fic._unpuncture(fib0)
+    fib_unpuctured = fic._unpuncture(fib)
 
-#print len(fib0_unpuctured)
+    #print len(fib_unpuctured)
 
-#polynomials = [0133, 0171, 0145, 0133]
-polynomials = [0b1101101,0b1001111,0b1010011,0b1101101]
+    #polynomials = [0133, 0171, 0145, 0133]
+    polynomials = [0b1101101,0b1001111,0b1010011,0b1101101]
 
-viterbi_input_data = bindata.BinData(fib0_unpuctured.bin)
-deconvoluted = bitstring.BitArray('0b' + str(viterbi.Transitions(polynomials).decode(viterbi_input_data)))
+    #print fib_unpuctured.bin
+    viterbi_input_data = bindata.BinData(fib_unpuctured.bin)
+    deconvoluted = bitstring.BitArray('0b' + str(viterbi.Transitions(polynomials).decode(viterbi_input_data)))
+    #print deconvoluted.bin
 
-pruned = deconvoluted[:-6]
-#print len(pruned.bin)
+    pruned = deconvoluted[:-6]
+    #print len(pruned.bin)
 
-prbs = bitstring.BitArray('0b' + ''.join([chr(x+0x30) for x in dp.prbs(dp.energy_dispersal_fic_vector_length)]))
+    prbs = bitstring.BitArray('0b' + ''.join([chr(x+0x30) for x in dp.prbs(dp.energy_dispersal_fic_vector_length)]))
 
 
-foo = (pruned ^ prbs)
+    foo = (pruned ^ prbs)
 
-print foo.bin
-open('test.fib', 'w').write(foo.tobytes())
+    print foo.bin
+    fibs += foo.tobytes()
+
+open('test.fib', 'w').write(fibs)
 
