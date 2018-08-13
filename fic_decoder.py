@@ -63,7 +63,8 @@ fib0_unpuctured = fic._unpuncture(fib0)
 
 #print len(fib0_unpuctured)
 
-polynomials = [0133, 0171, 0145, 0133]
+#polynomials = [0133, 0171, 0145, 0133]
+polynomials = [0b1101101,0b1001111,0b1010011,0b1101101]
 
 viterbi_input_data = bindata.BinData(fib0_unpuctured.bin)
 deconvoluted = bitstring.BitArray('0b' + str(viterbi.Transitions(polynomials).decode(viterbi_input_data)))
