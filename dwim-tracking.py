@@ -31,6 +31,8 @@ for opt, arg in options:
 dp = parameters.dab_parameters(1, sample_rate)
 prs = make_prs.modulate_prs(sample_rate, True)
 frame_length = int(sample_rate * 96e-3)
+symbol_length = len(prs)
+prs_len=len(prs)
 
 
 for filename in remainder:
@@ -66,9 +68,7 @@ for filename in remainder:
 
     reader.skip(start, 0)
 
-    prs_len=len(prs)
-
-    shift_signal = numpy.exp(complex(0,-1)*numpy.arange(prs_len)*2*numpy.pi*freq_offset/float(sample_rate))
+    shift_signal = numpy.exp(complex(0,-1)*numpy.arange(symbol_length*4)*2*numpy.pi*freq_offset/float(sample_rate))
 
     print len(signal), frame_length
 
@@ -87,22 +87,26 @@ for filename in remainder:
         #if i > 10: break
         if i > 500: break
 
-        signal, integer_sample_offset, fract_sample_offset = reader.read(count=prs_len)
+
+        signal, integer_sample_offset, fract_sample_offset = reader.read(count=symbol_length*4)
         print "read", len(signal), "samples from offset", integer_sample_offset, fract_sample_offset
-        if len(signal)!=prs_len: break
-
+        if len(signal)!=symbol_length*4: break
         signal = signal * shift_signal
-        '''
-        fine_freq_offset = auto_correlate.auto_correlate(signal, dp, sample_rate)
-        print "fine freq offset before", fine_freq_offset
-        fine_shift_signal = numpy.exp(complex(0,-1)*numpy.arange(len(signal))*2*numpy.pi*-fine_freq_offset/float(sample_rate))
-        signal = signal * fine_shift_signal
 
-        fine_freq_offset = auto_correlate.auto_correlate(signal, dp, sample_rate)
+        prs_signal = signal[:symbol_length]
+        fic_signal = signal[symbol_length:]
+
+        '''
+        fine_freq_offset = auto_correlate.auto_correlate(prs_signal, dp, sample_rate)
+        print "fine freq offset before", fine_freq_offset
+        fine_shift_signal = numpy.exp(complex(0,-1)*numpy.arange(len(prs_signal))*2*numpy.pi*-fine_freq_offset/float(sample_rate))
+        prs_signal = signal * fine_shift_signal
+
+        fine_freq_offset = auto_correlate.auto_correlate(prs_signal, dp, sample_rate)
         print "fine freq offset after", fine_freq_offset
         '''
 
-        error, cor, phase = correlate.estimate_prs_fine(signal[:len(prs)], prs)
+        error, cor, phase = correlate.estimate_prs_fine(prs_signal[:len(prs)], prs)
         print "error", error
 
         absolute_start = integer_sample_offset + fract_sample_offset / 1000. + error
@@ -125,7 +129,11 @@ for filename in remainder:
         estimated_lenghts.append(estimated_frame_length)
 
 
-        skip = estimated_frame_length-prs_len
+        iq.write("/tmp/fic/fic-%d.fc32" % i, fic_signal)
+        iq.write("/tmp/fic/prs-%d.fc32" % i, prs_signal)
+        iq.write("/tmp/fic/dab-%d.fc32" % i, signal)
+
+        skip = estimated_frame_length-symbol_length*4
         print "skipping", int(skip),int((skip - int(skip)) * 1000), "samples"
         reader.skip(int(skip), int((skip - int(skip)) * 1000))
 
