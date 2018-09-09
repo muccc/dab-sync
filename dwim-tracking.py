@@ -118,8 +118,8 @@ for pair in remainder:
             print i, "% .03f" % (absolute_start - prev_absolute_start - frame_length)
         prev_absolute_start = absolute_start
 
-        P = 0.5
-        I = 0.5
+        P = 0.2
+        I = 0.2
 
         error_acc += error
         estimated_frame_length = frame_length + I * error_acc + P * error 
