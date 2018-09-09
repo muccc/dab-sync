@@ -19,6 +19,7 @@ options, remainder = getopt.getopt(sys.argv[1:], 'r:f:', [
 
 sample_rate = 2048000
 sample_type = 'c32'
+step = 4
 
 multi_starts = []
 
@@ -66,7 +67,7 @@ for pair in remainder:
 
     print start
 
-    reader.skip(start, 0)
+    reader.skip(start + frame_length * (step - 1), 0)
 
     prs_len=len(prs)
 
@@ -127,7 +128,7 @@ for pair in remainder:
         estimated_lenghts.append(estimated_frame_length)
 
 
-        skip = estimated_frame_length-prs_len
+        skip = estimated_frame_length*step-prs_len
         print "skipping", int(skip),int((skip - int(skip)) * 1000), "samples"
         reader.skip(int(skip), int((skip - int(skip)) * 1000))
 
