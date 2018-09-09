@@ -133,9 +133,10 @@ for pair in remainder:
         reader.skip(int(skip), int((skip - int(skip)) * 1000))
 
 
-    print max(lenghts) - min(lenghts)
+    print "max diff:", max(lenghts[10:]) - min(lenghts[10:]), P, I
 
-    plt.plot(lenghts[10:])
+    #plt.plot(lenghts[10:])
+    plt.plot(lenghts)
     #plt.plot(estimated_lenghts[10:])
     #plt.yscale(lower=1, upper=3)
     #plt.ylim(-0.08, +0.08)
@@ -143,6 +144,7 @@ for pair in remainder:
     plt.show()
 
     print starts
+    #multi_starts.append(starts[10:])
     multi_starts.append(starts)
 
 #plt.show()
@@ -151,6 +153,9 @@ print multi_starts
 start_0 = numpy.array(multi_starts[0])
 for start in multi_starts[1:]:
     l = min(len(start_0), len(start))
-    plt.plot(start_0[:l] - numpy.array(start)[:l])
+    diffs = start_0[:l] - numpy.array(start)[:l]
+    diff = (sum(diffs[-10:]) / 10) % estimated_frame_length
+    print diff, (diff / (estimated_frame_length/196608*2048000))
+    plt.plot(diffs[:])
 plt.show()
 
