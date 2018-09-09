@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<block>
+  <name>RTLDABStep</name>
+  <key>dab_step_RTLDABStep</key>
+  <category>dab_step</category>
+  <import>import dab_step</import>
+  <make>dab_step.RTLDABStep($gain)</make>
+  <!-- Make one 'param' node for every Parameter you want settable from the GUI.
+       Sub-nodes:
+       * name
+       * key (makes the value accessible as $keyname, e.g. in the make node)
+       * type -->
+  <param>
+    <name>Gain</name>
+    <key>gain</key>
+    <value>30</value>
+    <type>int</type>
+  </param>
+
+  <source>
+    <name>out</name>
+    <type>complex</type>
+  </source>
+
+  <source>
+    <name>sync_out</name>
+    <type>complex</type>
+  </source>
+
+</block>
+
