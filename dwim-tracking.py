@@ -88,7 +88,7 @@ for pair in remainder:
         #print "i", i
 
         #if i > 10: break
-        if i > 500: break
+        #if i > 500: break
 
         signal, integer_sample_offset, fract_sample_offset = reader.read(count=prs_len)
         print "read", len(signal), "samples from offset", integer_sample_offset, fract_sample_offset
