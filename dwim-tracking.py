@@ -33,11 +33,13 @@ prs = make_prs.modulate_prs(sample_rate, True)
 frame_length = int(sample_rate * 96e-3)
 
 
-for filename in remainder:
+for pair in remainder:
+    filename = pair.split()[0]
+    skip_frames = float(pair.split()[1])
     f = open(filename, "rb")
     reader = iq.IQReader(f, sample_type)
 
-    #reader.skip(13107200, 0)
+    reader.skip(int(frame_length * skip_frames), 0)
 
     signal, integer_sample_offset, fract_sample_offset = reader.read(count=frame_length)
 
