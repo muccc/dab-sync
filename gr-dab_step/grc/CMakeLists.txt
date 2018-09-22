@@ -19,5 +19,6 @@
 
 install(FILES
     dab_step_RTLDABStep.xml
-    dab_step_tunetest.xml DESTINATION share/gnuradio/grc/blocks
+    dab_step_tunetest.xml
+    dab_step_dab_sync.xml DESTINATION share/gnuradio/grc/blocks
 )

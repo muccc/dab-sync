@@ -32,7 +32,13 @@ GR_PYTHON_INSTALL(
     FILES
     __init__.py
     RTLDABStep.py
-    tunetest.py DESTINATION ${GR_PYTHON_DIR}/dab_step
+    tunetest.py
+    auto_correlate.py
+    correlate.py
+    find_start.py
+    parameters.py
+    make_prs.py
+    dab_sync.py DESTINATION ${GR_PYTHON_DIR}/dab_step
 )
 
 ########################################################################

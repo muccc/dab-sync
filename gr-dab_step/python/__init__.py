@@ -33,4 +33,5 @@ except ImportError:
 # import any pure python here
 from RTLDABStep import RTLDABStep
 from tunetest import tunetest
+from dab_sync import dab_sync
 #
