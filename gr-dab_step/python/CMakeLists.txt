@@ -38,7 +38,8 @@ GR_PYTHON_INSTALL(
     find_start.py
     parameters.py
     make_prs.py
-    dab_sync.py DESTINATION ${GR_PYTHON_DIR}/dab_step
+    dab_sync.py
+    tune_timer.py DESTINATION ${GR_PYTHON_DIR}/dab_step
 )
 
 ########################################################################

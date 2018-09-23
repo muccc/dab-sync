@@ -28,6 +28,8 @@ import auto_correlate
 import correlate
 import make_prs
 import parameters
+import pmt
+import sys
 
 FIND_START = 0
 GET_PRS = 1
@@ -57,16 +59,17 @@ class dab_sync(gr.sync_block):
             out_sig=[numpy.complex64])
 
         self.sample_rate = 2048000
-        self.step = 4
+        self.step = 1
 
 
         self.dp = parameters.dab_parameters(1, self.sample_rate)
         self.prs = make_prs.modulate_prs(self.sample_rate, True)
         self.frame_length = int(self.sample_rate * 96e-3)
         self.prs_len=len(self.prs)
+        print "PRS length", self.prs_len
 
-        self.P = 0.2 * 1
-        self.I = 0.2 * 1
+        self.P = 0.2 * 3
+        self.I = 0.2 * 3
 
         self.fract = 1000
         self.integer_offset = 0
@@ -78,11 +81,15 @@ class dab_sync(gr.sync_block):
         self.samples = numpy.array([],dtype=numpy.complex64)
         self.next_state = FIND_START
 
+        self.set_history(self.prs_len+1)
+
     def work(self, input_items, output_items):
-        in0 = input_items[0]
+        in0 = input_items[0][self.history()-1:]
         out = output_items[0]
 
         consumed = 0
+
+        #print "work", len(in0), self.integer_offset, self.nitems_read(0), self.nitems_written(0)
 
         while True:
             #print self.state
@@ -117,6 +124,8 @@ class dab_sync(gr.sync_block):
                 self.count = self.prs_len
                 self.samples = numpy.array([],dtype=numpy.complex64)
                 self.next_state = PROCESS_PRS
+                self.integer_offset = self.nitems_read(0) + consumed
+                print "get prs at", self.integer_offset
 
             elif self.state == PROCESS_PRS:
                 signal = self.samples * self.shift_signal
@@ -127,11 +136,23 @@ class dab_sync(gr.sync_block):
                 '''
 
                 error, cor, phase = correlate.estimate_prs_fine(signal[:len(self.prs)], self.prs)
+                print "error:", error
                 absolute_start = self.integer_offset + self.fract_offset / 1000. + error
+                if self.fract_offset / 1000. + error < 0:
+                    print "================================================================"
 
                 self.error_acc += error
                 estimated_frame_length = self.frame_length + self.I * self.error_acc + self.P * error 
-                print "estimated_frame_length:", estimated_frame_length
+                ppm = (estimated_frame_length - self.frame_length) / self.frame_length * 1e6
+                print "estimated_frame_length:", estimated_frame_length, "(", ppm, "ppm)"
+                print "absolute_start:", absolute_start
+                print "consumed:", self.nitems_read(0)
+                print absolute_start + self.history() - 1 - self.nitems_read(0)
+
+                key = pmt.string_to_symbol("start_prs")
+                fract_offset = (self.fract_offset / 1000. + error) % 1
+                value = pmt.from_double(fract_offset)
+                self.add_item_tag(0, int(absolute_start) + self.history() - 1, key, value)
 
                 skip = estimated_frame_length*self.step-self.prs_len
 
@@ -148,24 +169,21 @@ class dab_sync(gr.sync_block):
                 if len(self.samples) < self.count:
                     break
 
-                self.integer_offset += self.count
                 self.samples = delay(self.samples, float(self.fract_offset) / self.fract)
                 self.state = self.next_state
 
             elif self.state == SKIP_SAMPLES:
-
-                current_integer_offset = self.integer_offset
+                current_integer_offset = self.nitems_read(0) + consumed
                 current_fract_offset = self.fract_offset
 
                 integer_count = self.skip_samples_count[0]
                 fract_count = self.skip_samples_count[1]
                 assert fract_count < self.fract
 
-                target_integer_offset = self.integer_offset + integer_count + (current_fract_offset + fract_count) / self.fract
+                target_integer_offset = current_integer_offset + integer_count + (current_fract_offset + fract_count) / self.fract
                 target_fract_offset = (current_fract_offset + fract_count) % self.fract
 
                 self.count = target_integer_offset - current_integer_offset
-                self.integer_offset = target_integer_offset
                 self.fract_offset = target_fract_offset
 
                 self.state = SKIP_SAMPLES_INTERNAL
@@ -185,7 +203,11 @@ class dab_sync(gr.sync_block):
         #out0 = in0[:consumed] 
         #return consumed
 
-        out[:] = in0
+        if self.history() > 1:
+            out[:] = input_items[0][:-self.history()+1]
+            #out[:] = in0[self.history()-1:]
+        else:
+            out0 = in0[:consumed]
         return len(out)
 
 
