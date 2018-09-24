@@ -22,7 +22,7 @@ def find_start(signal, sample_rate = 2000000):
 
             low_count = 0
 
-    raise Exception("No start found")
+    #raise Exception("No start found")
     return 0
 
 

@@ -100,6 +100,14 @@ class dab_sync(gr.sync_block):
                 #    signal = reader.read(f, count=self.frame_length)
                 rough_start = find_start.find_start(self.samples, self.sample_rate)
 
+                if rough_start == 0:
+                    self.state = GET_SAMPLES
+                    self.count = self.frame_length
+                    self.samples = numpy.array([],dtype=numpy.complex64)
+                    self.next_state = FIND_START
+                    continue
+                   
+
                 signal = self.samples[rough_start:]
                 fine_freq_offset = auto_correlate.auto_correlate(signal, self.dp, self.sample_rate)
 
