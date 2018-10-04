@@ -26,6 +26,12 @@ from monotonic_cffi import monotonic
 from threading import Timer
 import signal
 
+
+F_DAB = 178352000 #bundesweit
+#F_DAB = 220352000 #lokal
+
+#F_SECOND = 209936000 #regional
+F_SECOND = 220352000 #lokal
 class tune_timer(gr.sync_block):
     """
     docstring for block tune_timer
@@ -42,6 +48,7 @@ class tune_timer(gr.sync_block):
         self.i = 0
         self.t1 = 0
         signal.signal(signal.SIGALRM, self.handler)
+        self.gated = True
 
 
     def monotonic_raw_from_offset(self, offset):
@@ -57,25 +64,24 @@ class tune_timer(gr.sync_block):
 
     def tune_1(self):
         t = monotonic()
+        if self.gated:
+            return
         #self.t20 = monotonic()
-        self.timer = Timer(0.082, self.tune_2)
+        self.timer = Timer(0.080, self.tune_2)
         self.timer.start()
 
-        self.send_tune(100000000)
+        self.send_tune(F_SECOND)
 
         #print "t1 fired after", self.t10 - t, "should have after", self.t1
 
     def tune_2(self):
         #t = monotonic()
-        self.send_tune(222064000)
+        self.send_tune(F_DAB)
         #print "t2 fired after", self.t20 - t, "should have after 0.02"
 
     def update_timer(self, next_prs):
-        self.i += 1
-        if self.i < 10:
-            return
         self.t10 = monotonic()
-        self.t1 = next_prs - self.t10 - 0.006
+        self.t1 = next_prs - self.t10 - 0.005
         #print "setting timer for", self.t1
         signal.setitimer(signal.ITIMER_REAL, self.t1, 0.096)
 
@@ -98,10 +104,14 @@ class tune_timer(gr.sync_block):
                 #print "next prs in", next_prs - monotonic()
                 if next_prs_in > 0.010:
                     self.update_timer(next_prs)
+                    self.gated = False
             elif key == 'rx_time':
                 value = pmt.to_uint64(tag.value)
                 #print "sample", tag.offset, "sampled at", value
                 self.last_rx_time = (tag.offset, value)
+            elif key == 'sync':
+                self.gated = True
+                self.send_tune(F_DAB)
         out[:] = in0
         return len(output_items[0])
 

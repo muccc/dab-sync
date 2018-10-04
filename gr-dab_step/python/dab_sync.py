@@ -37,6 +37,8 @@ PROCESS_PRS = 2
 GET_SAMPLES = 3
 SKIP_SAMPLES = 4
 SKIP_SAMPLES_INTERNAL = 5
+PREPARE_FIND_START = 6
+INIT = 7
 
 def delay(signal, delay):
     #print "delay", delay, len(signal)
@@ -76,10 +78,7 @@ class dab_sync(gr.sync_block):
         self.fract_offset = 0
 
 
-        self.state = GET_SAMPLES
-        self.count = self.frame_length
-        self.samples = numpy.array([],dtype=numpy.complex64)
-        self.next_state = FIND_START
+        self.state = INIT
 
         self.set_history(self.prs_len+1)
 
@@ -93,7 +92,22 @@ class dab_sync(gr.sync_block):
 
         while True:
             #print self.state
-            if self.state == FIND_START:
+            self.integer_offset = self.nitems_read(0) + consumed
+            if self.state == INIT:
+                self.state = SKIP_SAMPLES
+                self.skip_samples_count = (int(self.frame_length * 10.1), 0)
+                self.next_state = PREPARE_FIND_START
+                key = pmt.string_to_symbol("sync")
+                value = pmt.from_double(0)
+                self.add_item_tag(0, self.integer_offset, key, value)
+
+            elif self.state == PREPARE_FIND_START:
+                self.state = GET_SAMPLES
+                self.count = self.frame_length
+                self.samples = numpy.array([],dtype=numpy.complex64)
+                self.next_state = FIND_START
+
+            elif self.state == FIND_START:
                 #start = 0
                 #while start == 0:
                 #    start = find_start.find_start(signal, self.sample_rate)
@@ -101,14 +115,14 @@ class dab_sync(gr.sync_block):
                 rough_start = find_start.find_start(self.samples, self.sample_rate)
 
                 if rough_start == 0:
-                    self.state = GET_SAMPLES
-                    self.count = self.frame_length
-                    self.samples = numpy.array([],dtype=numpy.complex64)
-                    self.next_state = FIND_START
+                    self.state = INIT
                     continue
                    
 
                 signal = self.samples[rough_start:]
+                if len(signal) < self.prs_len:
+                    self.state = PREPARE_FIND_START
+                    continue
                 fine_freq_offset = auto_correlate.auto_correlate(signal, self.dp, self.sample_rate)
 
                 fine_start, rough_freq_offset = correlate.find_rough_freq_offset(signal, -fine_freq_offset, self.prs, self.dp, self.sample_rate)
@@ -132,7 +146,6 @@ class dab_sync(gr.sync_block):
                 self.count = self.prs_len
                 self.samples = numpy.array([],dtype=numpy.complex64)
                 self.next_state = PROCESS_PRS
-                self.integer_offset = self.nitems_read(0) + consumed
                 print "get prs at", self.integer_offset
 
             elif self.state == PROCESS_PRS:
@@ -157,10 +170,14 @@ class dab_sync(gr.sync_block):
                 print "consumed:", self.nitems_read(0)
                 print absolute_start + self.history() - 1 - self.nitems_read(0)
 
+                if abs(ppm) > 100:
+                    self.state = INIT
+                    continue
+ 
                 key = pmt.string_to_symbol("start_prs")
                 fract_offset = (self.fract_offset / 1000. + error) % 1
                 value = pmt.from_double(fract_offset)
-                self.add_item_tag(0, int(absolute_start) + self.history() - 1, key, value)
+                self.add_item_tag(0, int(absolute_start), key, value)
 
                 skip = estimated_frame_length*self.step-self.prs_len
 
