@@ -3,6 +3,7 @@ import make_prs
 #import matplotlib.pyplot as plt
 import scipy.signal
 import cmath
+import time
 
 def delay(signal, delay):
     if delay == 0:
@@ -12,101 +13,88 @@ def delay(signal, delay):
         sinc_vect[i] = numpy.sinc(100.0 - i - delay)
     return numpy.convolve(signal, sinc_vect, 'same')
 
-def estimate_prs_fine_delay(signal, prs, delay_estimate):
-    #c = scipy.signal.fftconvolve(signal, numpy.conj(prs), 'same')
-    #delay_estimate = 0
-    print "delay_estimate", delay_estimate
-    signal = delay(signal, delay_estimate)
-    c = numpy.correlate(signal, prs, 'same')
-    prs_middle = numpy.argmax(numpy.abs(c))
+class Correlator(object):
+    def __init__(self, prs, sample_rate):
+        self._delayed_prs = []
+        self._sample_rate = sample_rate
+        self._prs_len = len(prs)
 
-    #Interpolate the result to get a finer resolution.
-    # Based on http://www.dsprelated.com/dspbooks/sasp/Quadratic_Interpolation_Spectral_Peaks.html
+        for i in range(1000):
+            # TODO: could also do the first FFT already here. In this case the shift can also
+            # be done using a linear phase term
+            self._delayed_prs.append(numpy.conj(delay(prs, -i/1000.))[::-1])
 
-    alpha_index = prs_middle - 1
-    beta_index = prs_middle
-    gamma_index = prs_middle + 1
-    alpha = numpy.abs(c[alpha_index])
-    beta = numpy.abs(c[beta_index])
-    gamma = numpy.abs(c[gamma_index])
+    def estimate_prs_fine(self, signal, delay_estimate = 0):
+        #t = time.time()
+        #print "delay_estimate", delay_estimate
+        prs = self._delayed_prs[delay_estimate]
+        c = scipy.signal.fftconvolve(signal, prs, 'same')
+        #print time.time() - t
 
-    #correction = -0.5 * alpha/beta + 0.5 * gamma/beta
-    #correction = -alpha / (alpha + beta) + gamma / (gamma + beta)
-    correction = 0.5 * (alpha - gamma) / (alpha - 2*beta + gamma)
-    print "correction", correction
-    correction += delay_estimate
-    print "correction + delay", correction
+        prs_middle = numpy.argmax(numpy.abs(c))
 
-    prs_middle_fine = prs_middle + correction
-    #print prs_middle - len(prs) / 2, "% .02f" % correction,
+        #Interpolate the result to get a finer resolution.
+        # Based on http://www.dsprelated.com/dspbooks/sasp/Quadratic_Interpolation_Spectral_Peaks.html
 
-    #plt.plot(numpy.abs(c))
-    #plt.show()
-    return prs_middle_fine - len(prs) / 2, numpy.abs(c[prs_middle]), numpy.angle(c[prs_middle]), correction
+        alpha_index = prs_middle - 1
+        beta_index = prs_middle
+        gamma_index = prs_middle + 1
+        alpha = numpy.abs(c[alpha_index])
+        beta = numpy.abs(c[beta_index])
+        gamma = numpy.abs(c[gamma_index])
 
+        #correction = -0.5 * alpha/beta + 0.5 * gamma/beta
+        #correction = -alpha / (alpha + beta) + gamma / (gamma + beta)
+        correction = 0.5 * (alpha - gamma) / (alpha - 2*beta + gamma)
+        #print "correction", correction
 
-def estimate_prs_fine(signal, prs):
-    #c = scipy.signal.fftconvolve(signal, numpy.conj(prs), 'same')
-    c = numpy.correlate(signal, prs, 'same')
-    prs_middle = numpy.argmax(numpy.abs(c))
+        prs_middle_fine = prs_middle + correction
+        #print prs_middle - self._prs_len / 2, "% .02f" % correction,
 
-    #Interpolate the result to get a finer resolution.
-    # Based on http://www.dsprelated.com/dspbooks/sasp/Quadratic_Interpolation_Spectral_Peaks.html
-
-    alpha_index = prs_middle - 1
-    beta_index = prs_middle
-    gamma_index = prs_middle + 1
-    alpha = numpy.abs(c[alpha_index])
-    beta = numpy.abs(c[beta_index])
-    gamma = numpy.abs(c[gamma_index])
-    correction = 0.5 * (alpha - gamma) / (alpha - 2*beta + gamma)
-    prs_middle_fine = prs_middle + correction
-
-    #plt.plot(numpy.abs(c))
-    #plt.show()
-    return prs_middle_fine - len(prs) / 2, numpy.abs(c[prs_middle]), numpy.angle(c[prs_middle])
+        #plt.plot(numpy.abs(c))
+        #plt.show()
+        return prs_middle_fine - self._prs_len / 2, numpy.abs(c[prs_middle]), numpy.angle(c[prs_middle])
 
 
-def estimate_prs(signal, prs):
-    #c = scipy.signal.fftconvolve(signal, numpy.conj(prs), 'same')
-    c = numpy.correlate(signal, prs, 'same')
-    prs_middle = numpy.argmax(numpy.abs(c))
+    def estimate_prs(self, signal):
+        c = scipy.signal.fftconvolve(signal, self._delayed_prs[0], 'same')
+        prs_middle = numpy.argmax(numpy.abs(c))
 
-    #plt.plot(numpy.abs(c))
-    #plt.show()
-    return prs_middle - len(prs) / 2, numpy.abs(c[prs_middle]), numpy.angle(c[prs_middle])
+        #plt.plot(numpy.abs(c))
+        #plt.show()
+        return prs_middle - self._prs_len / 2, numpy.abs(c[prs_middle]), numpy.angle(c[prs_middle])
 
-def find_rough_freq_offset(signal, fine_freq_offset, prs, dp, sample_rate):
-    prs_signal = signal[:int(len(prs)*1.5)]
+    def find_rough_freq_offset(self, signal, fine_freq_offset):
+        prs_signal = signal[:int(self._prs_len*1.5)]
 
-    shift_signal = numpy.exp(complex(0,-1)*numpy.arange(len(prs_signal))*2*numpy.pi*fine_freq_offset/float(sample_rate))
-    prs_signal = prs_signal * shift_signal
+        shift_signal = numpy.exp(complex(0,-1)*numpy.arange(len(prs_signal))*2*numpy.pi*fine_freq_offset/float(self._sample_rate))
+        prs_signal = prs_signal * shift_signal
 
-    max_cor = 0
-    best_loc = 0
-    best_shift = 0
-    for offset_khz in range(-10, 10):
-        #print offset_khz
-        offset = offset_khz * 1000
-        shift_signal = numpy.exp(complex(0,-1)*numpy.arange(len(prs_signal))*2*numpy.pi*offset/float(sample_rate))
-        prs_signal_shifted = prs_signal * shift_signal
+        max_cor = 0
+        best_loc = 0
+        best_shift = 0
+        for offset_khz in range(-10, 10):
+            #print offset_khz
+            offset = offset_khz * 1000
+            shift_signal = numpy.exp(complex(0,-1)*numpy.arange(len(prs_signal))*2*numpy.pi*offset/float(self._sample_rate))
+            prs_signal_shifted = prs_signal * shift_signal
 
-        #iq.write("/tmp/bar.cfile", signal_shifted)
-        location, cor, phase = estimate_prs(prs_signal_shifted, prs)    
-        #print offset, cor, location, phase
+            #iq.write("/tmp/bar.cfile", signal_shifted)
+            location, cor, phase = self.estimate_prs(prs_signal_shifted)    
+            #print offset, cor, location, phase
 
-        if cor > max_cor:
-            #print "better"
-            max_cor = cor
-            best_loc = location
-            best_shift = offset
+            if cor > max_cor:
+                #print "better"
+                max_cor = cor
+                best_loc = location
+                best_shift = offset
 
-    #print max_cor, best_loc, best_shift
-    #print best_loc - len(prs)/2 + 492
-    #print best_loc - len(prs)/2 + 492, best_shift
-    #return (best_loc - len(prs)/2 + dp.cp_length, best_shift)
-    print best_loc, best_shift
-    return (best_loc, best_shift)
+        #print max_cor, best_loc, best_shift
+        #print best_loc - self._prs_len/2 + 492
+        #print best_loc - self._prs_len/2 + 492, best_shift
+        #return (best_loc - self._prs_len/2 + dp.cp_length, best_shift)
+        print best_loc, best_shift
+        return (best_loc, best_shift)
 
 if __name__ == "__main__":
     import iq
