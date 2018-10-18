@@ -12,12 +12,21 @@ def delay(signal, delay):
         sinc_vect[i] = numpy.sinc(100.0 - i - delay)
     return numpy.convolve(signal, sinc_vect, 'same')
 
+
+the_prs = make_prs.modulate_prs(2048000, True)
+delayed_prs = []
+for i in range(1000):
+    delayed_prs.append(numpy.conj(delay(the_prs, -i/1000.))[::-1])
+
 def estimate_prs_fine_delay(signal, prs, delay_estimate):
-    #c = scipy.signal.fftconvolve(signal, numpy.conj(prs), 'same')
-    #delay_estimate = 0
-    print "delay_estimate", delay_estimate
-    signal = delay(signal, delay_estimate)
-    c = numpy.correlate(signal, prs, 'same')
+    #print "delay_estimate", delay_estimate
+    #signal = delay(signal, delay_estimate / 1000.)
+    #prs = delay(prs, -delay_estimate/1000)
+    prs = delayed_prs[delay_estimate]
+    c = scipy.signal.fftconvolve(signal, prs, 'same')
+    #c = scipy.signal.fftconvolve(signal, numpy.conj(prs)[::-1], 'same')
+    #c = numpy.correlate(signal, prs, 'same')
+
     prs_middle = numpy.argmax(numpy.abs(c))
 
     #Interpolate the result to get a finer resolution.
@@ -33,16 +42,16 @@ def estimate_prs_fine_delay(signal, prs, delay_estimate):
     #correction = -0.5 * alpha/beta + 0.5 * gamma/beta
     #correction = -alpha / (alpha + beta) + gamma / (gamma + beta)
     correction = 0.5 * (alpha - gamma) / (alpha - 2*beta + gamma)
-    print "correction", correction
-    correction += delay_estimate
-    print "correction + delay", correction
+    #print "correction", correction
+    #correction += delay_estimate
+    #print "correction + delay", correction
 
     prs_middle_fine = prs_middle + correction
     #print prs_middle - len(prs) / 2, "% .02f" % correction,
 
     #plt.plot(numpy.abs(c))
     #plt.show()
-    return prs_middle_fine - len(prs) / 2, numpy.abs(c[prs_middle]), numpy.angle(c[prs_middle]), correction
+    return prs_middle_fine - len(prs) / 2, numpy.abs(c[prs_middle]), numpy.angle(c[prs_middle])
 
 
 def estimate_prs_fine(signal, prs):
@@ -68,8 +77,8 @@ def estimate_prs_fine(signal, prs):
 
 
 def estimate_prs(signal, prs):
-    #c = scipy.signal.fftconvolve(signal, numpy.conj(prs), 'same')
-    c = numpy.correlate(signal, prs, 'same')
+    c = scipy.signal.fftconvolve(signal, delayed_prs[0], 'same')
+    #c = numpy.correlate(signal, prs, 'same')
     prs_middle = numpy.argmax(numpy.abs(c))
 
     #plt.plot(numpy.abs(c))

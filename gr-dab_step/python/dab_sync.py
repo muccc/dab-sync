@@ -156,8 +156,9 @@ class dab_sync(gr.sync_block):
                 signal = signal * fine_shift_signal
                 '''
 
-                error, cor, phase = correlate.estimate_prs_fine(signal[:len(self.prs)], self.prs)
-                print "error:", error
+                #error, cor, phase = correlate.estimate_prs_fine_delay(signal[:len(self.prs)], self.prs, float(self.fract_offset) / self.fract)
+                error, cor, phase = correlate.estimate_prs_fine_delay(signal[:len(self.prs)], self.prs, self.fract_offset)
+                #print "error:", error
                 absolute_start = self.integer_offset + self.fract_offset / 1000. + error
                 if self.fract_offset / 1000. + error < 0:
                     print "================================================================"
@@ -194,7 +195,7 @@ class dab_sync(gr.sync_block):
                 if len(self.samples) < self.count:
                     break
 
-                self.samples = delay(self.samples, float(self.fract_offset) / self.fract)
+                #self.samples = delay(self.samples, float(self.fract_offset) / self.fract)
                 self.state = self.next_state
 
             elif self.state == SKIP_SAMPLES:
