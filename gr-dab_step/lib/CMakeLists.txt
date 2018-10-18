@@ -26,6 +26,7 @@ include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 
 list(APPEND dab_step_sources
+    dab_sync_cpp_impl.cc
 )
 
 set(dab_step_sources "${dab_step_sources}" PARENT_SCOPE)

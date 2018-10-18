@@ -22,5 +22,5 @@
 ########################################################################
 install(FILES
     api.h
-    DESTINATION include/dab_step
+    dab_sync_cpp.h DESTINATION include/dab_step
 )

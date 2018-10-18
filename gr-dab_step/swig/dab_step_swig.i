@@ -8,6 +8,9 @@
 %include "dab_step_swig_doc.i"
 
 %{
+#include "dab_step/dab_sync_cpp.h"
 %}
 
 
+%include "dab_step/dab_sync_cpp.h"
+GR_SWIG_BLOCK_MAGIC2(dab_step, dab_sync_cpp);
