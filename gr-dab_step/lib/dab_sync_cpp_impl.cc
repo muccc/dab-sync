@@ -216,6 +216,14 @@ namespace gr {
         pmt::pmt_t key;
         pmt::pmt_t value;
 
+        std::vector<tag_t> in_tags;
+        get_tags_in_window(in_tags, 0, 0, noutput_items);
+
+        for(tag_t tag : in_tags) {
+            std::cout << "dab sync: got key: " << pmt::symbol_to_string(tag.key) << "\n";
+        }
+
+
         while(cont) {
             integer_offset = nitems_read(0) + consumed;
             //printf("state: %d\n", d_state);
