@@ -24,7 +24,7 @@ options, remainder = getopt.getopt(sys.argv[1:], 'r:f:', [
 
 sample_rate = 2048000
 sample_type = 'c32'
-step = 4
+step = 1
 
 multi_starts = []
 
@@ -37,6 +37,8 @@ for opt, arg in options:
 dp = parameters.dab_parameters(1, sample_rate)
 prs = make_prs.modulate_prs(sample_rate, True)
 frame_length = int(sample_rate * 96e-3)
+print dp.ns_length
+
 #QtGui.QApplication.setGraphicsSystem('raster')
 app = QtGui.QApplication([])
 #mw = QtGui.QMainWindow()
@@ -119,7 +121,9 @@ for pair in remainder:
         #if i > 500: break
 
         signal, integer_sample_offset, fract_sample_offset = reader.read(count=prs_len)
+
         print "read", len(signal), "samples from offset", integer_sample_offset, fract_sample_offset
+
         if len(signal)!=prs_len: break
 
         signal = signal * shift_signal
@@ -143,20 +147,21 @@ for pair in remainder:
         if prev_absolute_start:
             instant_frame_length = absolute_start - prev_absolute_start
             print "instant_frame_length:", instant_frame_length
-            lenghts.append(instant_frame_length)
+            lenghts.append(instant_frame_length - step * frame_length)
             print i, "% .03f" % (absolute_start - prev_absolute_start - frame_length)
             if i % 10 == 0:
                 update1(lenghts)
                 #QtGui.QApplication.instance().processEvents()
+                pass
             update2(lenghts)
             QtGui.QApplication.instance().processEvents()
         prev_absolute_start = absolute_start
 
-        P = 0.2
-        I = 0.2
+        P = 0.2 * 3
+        I = 0.2 * 3
 
         error_acc += error
-        estimated_frame_length = frame_length + I * error_acc + P * error 
+        estimated_frame_length = frame_length + I * error_acc + P * error
         print "estimated_frame_length:", estimated_frame_length
         estimated_lenghts.append(estimated_frame_length)
 
