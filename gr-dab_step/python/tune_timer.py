@@ -27,11 +27,15 @@ from threading import Timer
 import signal
 
 
-F_DAB = 178352000 #bundesweit
-#F_DAB = 220352000 #lokal
+F_DAB = 220352000 #lokal
+#F_DAB = 178352000 #bundesweit
 
+#F_SECOND = 220352000 #lokal
 #F_SECOND = 209936000 #regional
-F_SECOND = 220352000 #lokal
+F_SECOND = 178352000 #bundesweit
+
+#222064000 #?
+
 class tune_timer(gr.sync_block):
     """
     docstring for block tune_timer
@@ -45,7 +49,7 @@ class tune_timer(gr.sync_block):
         self.sample_rate = 2048000
         self.last_rx_time = (None, None)
         self.last_rx_time = (0, 0)
-        self.i = 0
+        #self.i = 0
         self.t1 = 0
         signal.signal(signal.SIGALRM, self.handler)
         self.gated = True
@@ -57,6 +61,7 @@ class tune_timer(gr.sync_block):
     def send_tune(self, freq):
         cmd = pmt.cons(pmt.intern("set_center_freq"),
                 pmt.list2(pmt.from_double(freq), pmt.from_uint64(0)))
+        #print "tune to", freq
         self.message_port_pub(pmt.intern('command'), cmd)
 
     def handler(self, signum, frame):
@@ -66,6 +71,8 @@ class tune_timer(gr.sync_block):
         t = monotonic()
         if self.gated:
             return
+        #if self.i < 10:
+            #return
         #self.t20 = monotonic()
         self.timer = Timer(0.080, self.tune_2)
         self.timer.start()
@@ -80,6 +87,9 @@ class tune_timer(gr.sync_block):
         #print "t2 fired after", self.t20 - t, "should have after 0.02"
 
     def update_timer(self, next_prs):
+        #self.i += 1
+        #if self.i < 10:
+        #    return
         self.t10 = monotonic()
         self.t1 = next_prs - self.t10 - 0.005
         #print "setting timer for", self.t1
@@ -111,7 +121,8 @@ class tune_timer(gr.sync_block):
                 self.last_rx_time = (tag.offset, value)
             elif key == 'sync':
                 self.gated = True
-                self.send_tune(F_DAB)
+                self.tune_2()
+
         out[:] = in0
         return len(output_items[0])
 
