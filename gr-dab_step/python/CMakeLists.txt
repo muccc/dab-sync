@@ -39,6 +39,7 @@ GR_PYTHON_INSTALL(
     parameters.py
     make_prs.py
     dab_sync.py
+    iq.py
     tune_timer.py DESTINATION ${GR_PYTHON_DIR}/dab_step
 )
 

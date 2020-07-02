@@ -1,8 +1,16 @@
 import sys
 import numpy
 import scipy.signal
+import iq
+
+#number = 0
 
 def find_start(signal, sample_rate = 2000000):
+    #global number
+    #print "fist samples at find_start", signal[0]
+    #iq.write("/tmp/signals/py-start-%d.cfile" % number, signal)
+    #number += 1
+
     input_low_pass = scipy.signal.firwin(13, 1000./sample_rate)
 
     count = 100e-3 * sample_rate
