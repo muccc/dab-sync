@@ -70,7 +70,6 @@ class dab_sync(gr.sync_block):
         self.prs_len=len(self.prs)
         print "PRS length", self.prs_len
 
-        
         self.correlator = correlate.Correlator(self.prs, self.sample_rate)
         self.P = 0.2 * 3
         self.I = 0.2 * 3
@@ -96,6 +95,7 @@ class dab_sync(gr.sync_block):
             #print self.state
             self.integer_offset = self.nitems_read(0) + consumed
             if self.state == INIT:
+                print "INIT"
                 self.state = SKIP_SAMPLES
                 self.skip_samples_count = (int(self.frame_length * 10.1), 0)
                 self.next_state = PREPARE_FIND_START
@@ -104,12 +104,14 @@ class dab_sync(gr.sync_block):
                 self.add_item_tag(0, self.integer_offset, key, value)
 
             elif self.state == PREPARE_FIND_START:
+                print "PREPARE_FIND_START get", self.frame_length, "samples"
                 self.state = GET_SAMPLES
                 self.count = self.frame_length
                 self.samples = numpy.array([],dtype=numpy.complex64)
                 self.next_state = FIND_START
 
             elif self.state == FIND_START:
+                print "FIND_START"
                 #start = 0
                 #while start == 0:
                 #    start = find_start.find_start(signal, self.sample_rate)
@@ -117,15 +119,19 @@ class dab_sync(gr.sync_block):
                 rough_start = find_start.find_start(self.samples, self.sample_rate)
 
                 if rough_start == 0:
+                    print "rough_start = 0"
                     self.state = INIT
                     continue
-                   
 
                 signal = self.samples[rough_start:]
                 if len(signal) < self.prs_len:
+                    print "len(signal) < self.prs_len"
                     self.state = PREPARE_FIND_START
                     continue
+
                 fine_freq_offset = auto_correlate.auto_correlate(signal, self.dp, self.sample_rate)
+
+                print "fine_freq_offset", fine_freq_offset
 
                 fine_start, rough_freq_offset = self.correlator.find_rough_freq_offset(signal, -fine_freq_offset)
                 signal = signal[fine_start:]
@@ -144,13 +150,15 @@ class dab_sync(gr.sync_block):
                 self.next_state = GET_PRS
 
             elif self.state == GET_PRS:
+                #print "GET_PRS"
                 self.state = GET_SAMPLES
                 self.count = self.prs_len
                 self.samples = numpy.array([],dtype=numpy.complex64)
                 self.next_state = PROCESS_PRS
-                print "get prs at", self.integer_offset
+                #print "get prs at", self.integer_offset
 
             elif self.state == PROCESS_PRS:
+                #print "PROCESS_PRS"
                 signal = self.samples * self.shift_signal
                 '''
                 fine_freq_offset = auto_correlate.auto_correlate(signal, self.dp, self.sample_rate)
@@ -159,19 +167,18 @@ class dab_sync(gr.sync_block):
                 '''
 
                 error, cor, phase = self.correlator.estimate_prs_fine(signal[:len(self.prs)], self.fract_offset)
-                #print "error:", error
+                print "error:", error
                 absolute_start = self.integer_offset + self.fract_offset / 1000. + error
-                if self.fract_offset / 1000. + error < 0:
-                    print "================================================================"
+                #if self.fract_offset / 1000. + error < 0:
+                #    print "================================================================"
 
                 self.error_acc += error
                 estimated_frame_length = self.frame_length + self.I * self.error_acc + self.P * error 
                 ppm = (estimated_frame_length - self.frame_length) / self.frame_length * 1e6
-                print "estimated_frame_length:", estimated_frame_length, "(", ppm, "ppm)"
-                print "absolute_start:", absolute_start
-                print "consumed:", self.nitems_read(0)
-                print absolute_start + self.history() - 1 - self.nitems_read(0)
-
+                print "estimated_frame_length: %.5f (%.3f ppm)" % (estimated_frame_length, ppm)
+                #print "absolute_start:", absolute_start
+                #print "consumed:", self.nitems_read(0)
+                #print absolute_start + self.history() - 1 - self.nitems_read(0)
                 if abs(ppm) > 100:
                     self.state = INIT
                     continue
@@ -179,6 +186,8 @@ class dab_sync(gr.sync_block):
                 key = pmt.string_to_symbol("start_prs")
                 fract_offset = (self.fract_offset / 1000. + error) % 1
                 value = pmt.from_double(fract_offset)
+                #self.add_item_tag(0, int(absolute_start) + self.history() - 1, key, value)
+                #self.add_item_tag(0, int(absolute_start) - self.history() - 1, key, value)
                 self.add_item_tag(0, int(absolute_start), key, value)
 
                 skip = estimated_frame_length*self.step-self.prs_len
@@ -213,6 +222,7 @@ class dab_sync(gr.sync_block):
                 self.count = target_integer_offset - current_integer_offset
                 self.fract_offset = target_fract_offset
 
+                print "SKIP_SAMPLES", self.count
                 self.state = SKIP_SAMPLES_INTERNAL
 
             elif self.state == SKIP_SAMPLES_INTERNAL:
