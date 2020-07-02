@@ -5,14 +5,13 @@ import numpy
 
 def auto_correlate(signal, dp, sample_rate):
     Tu = dp.fft_length
-    #Tu = sample_rate / 1000 # 1 ms
-    print Tu
+    print Tu, dp.cp_length, len(signal)
 
-    signal_slice = signal[:Tu * 2]
-    time_shifted_signal = signal_slice[Tu:]
+    time_shifted_signal = signal[Tu:Tu + dp.cp_length]
     auto_correlated = [0] * dp.cp_length
+
     for i in range(len(auto_correlated)):
-        auto_correlated[i] = numpy.angle(signal[i] * numpy.conj(time_shifted_signal[i]))/ 2 / 3.14 * Tu / 2
+        auto_correlated[i] = numpy.angle(signal[i] * numpy.conj(time_shifted_signal[i])) / 2. / 3.14 * Tu / 2
     #plt.plot(auto_correlated)
     #plt.show()
 
