@@ -4,6 +4,7 @@ import make_prs
 import scipy.signal
 import cmath
 import time
+import iq
 
 def delay(signal, delay):
     if delay == 0:
@@ -18,15 +19,24 @@ class Correlator(object):
         self._delayed_prs = []
         self._sample_rate = sample_rate
         self._prs_len = len(prs)
+        self._prs = prs
+        #print "first sample of prs",prs[0]
+        #print "100 sample of prs", prs[100]
 
         for i in range(1000):
             # TODO: could also do the first FFT already here. In this case the shift can also
             # be done using a linear phase term
             self._delayed_prs.append(numpy.conj(delay(prs, -i/1000.))[::-1])
+            #iq.write("/tmp/signals/python-prs-delayd-%d.cfile" % i, self._delayed_prs[-1])
+
+        #print "first sample of delayes_prs[0]",self._delayed_prs[0][0]
+        #print "100 sample of delayed_prs[0]", self._delayed_prs[0][100]
+
 
     def estimate_prs_fine(self, signal, delay_estimate = 0):
         #t = time.time()
-        #print "delay_estimate", delay_estimate
+        print "delay_estimate", delay_estimate
+        print "s[0]", signal[0]
         prs = self._delayed_prs[delay_estimate]
         c = scipy.signal.fftconvolve(signal, prs, 'same')
         #print time.time() - t
@@ -53,12 +63,16 @@ class Correlator(object):
 
         #plt.plot(numpy.abs(c))
         #plt.show()
+        print "prs_middle_fine", prs_middle_fine
         return prs_middle_fine - self._prs_len / 2, numpy.abs(c[prs_middle]), numpy.angle(c[prs_middle])
 
 
     def estimate_prs(self, signal):
         c = scipy.signal.fftconvolve(signal, self._delayed_prs[0], 'same')
+        #c = scipy.signal.fftconvolve(signal, self._delayed_prs[0], 'full')
+        print len(signal), len(self._delayed_prs[0]), len(c)
         prs_middle = numpy.argmax(numpy.abs(c))
+        print "prs_middle", prs_middle, numpy.abs(c[prs_middle])
 
         #plt.plot(numpy.abs(c))
         #plt.show()
@@ -70,6 +84,9 @@ class Correlator(object):
         shift_signal = numpy.exp(complex(0,-1)*numpy.arange(len(prs_signal))*2*numpy.pi*fine_freq_offset/float(self._sample_rate))
         prs_signal = prs_signal * shift_signal
 
+        #print "first sample of prs_signal", prs_signal[0]
+        #print "100 sample of prs_signal", prs_signal[100]
+
         max_cor = 0
         best_loc = 0
         best_shift = 0
@@ -78,6 +95,10 @@ class Correlator(object):
             offset = offset_khz * 1000
             shift_signal = numpy.exp(complex(0,-1)*numpy.arange(len(prs_signal))*2*numpy.pi*offset/float(self._sample_rate))
             prs_signal_shifted = prs_signal * shift_signal
+
+            #print "first sample of prs_signal_shifted", prs_signal_shifted[0]
+            #print "100 sample of prs_signal_shifted", prs_signal_shifted[100]
+
 
             #iq.write("/tmp/bar.cfile", signal_shifted)
             location, cor, phase = self.estimate_prs(prs_signal_shifted)    
