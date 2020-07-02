@@ -14,7 +14,7 @@ def find_start(signal, sample_rate = 2000000):
 
     low_count = 0
     for i in xrange(len(signal_mag)):
-        if signal_mag_filtered[i] < level / 2:
+        if signal_mag_filtered[i] < level / 1.2:
             low_count += 1
         else:
             #if low_count > 100:
