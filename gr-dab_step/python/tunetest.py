@@ -19,6 +19,15 @@
 # Boston, MA 02110-1301, USA.
 # 
 
+
+"""
+Used by RTLDABStep.py to jump between two
+frequencies. Tining is hard coded and based
+on received samples in work().
+
+Just a playground.
+"""
+
 import numpy
 import time
 from gnuradio import gr
@@ -34,36 +43,35 @@ class tunetest(gr.sync_block):
             out_sig=[numpy.complex64])
 
         self.tune = tune
-        self.frame_length = 2048000 * 0.096 * 2
-        #self.frame_length = 2048000 * 0.096 * 2 / 3
-        self.listen_time = 2048000 * 0.005
-        #self.next_tune = 10e6
-        #self.next_tune = self.frame_length * 100
-        self.next_tune = self.frame_length
+        self.frame_length = 2048000 * 0.096
+        self.listen_time = 2048000 * 0.008
+        self.next_tune = self.frame_length * 100
+        #self.next_tune = self.frame_length
         self.items = 0
         self.state = False
         self.t0 = time.time()
         self.t1 = time.time()
+
 
     def work(self, input_items, output_items):
         t = time.time()
         in0 = input_items[0]
         out = output_items[0]
         out[:] = in0
-        #print "%d data after %f" % (len(in0), t - self.t1)
+        print "%d data after %f" % (len(in0), t - self.t1)
         self.t1 = t
         self.items += len(in0)
-        #print len(in0)
+
         if self.items >= self.next_tune:
             print "tune after %f" % (t - self.t0)
             self.t0 = t
             self.tune.eval(self.items)
             print "done"
-            self.next_tune += self.frame_length
-            #if self.state:
-            #    self.next_tune += self.frame_length - self.listen_time
-            #else:
-            #    self.next_tune += self.listen_time
+
+            if self.state:
+                self.next_tune += self.frame_length - self.listen_time
+            else:
+                self.next_tune += self.listen_time
             self.state = not self.state
         return len(output_items[0])
 

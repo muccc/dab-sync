@@ -19,6 +19,18 @@
 # Boston, MA 02110-1301, USA.
 # 
 
+
+"""
+This block jumps between two frequencies and outputs
+the resulting stream. Tune timings are hard coded
+in tunetest.py.
+
+Timing is base on amount of samples received via
+work. There is no internal timer.
+
+Just a playground.
+"""
+
 from gnuradio import gr
 import osmosdr
 import tunetest
@@ -34,9 +46,6 @@ class tune_notifier(gr.feval_ll):
         self.b = b
 
     def eval(self, state):
-        """
-        This method is called by vector_sink_cn when it is full
-        """
         threading.Thread(target=self.b, args = (state, )).start()
 
 class RTLDABStep(gr.hier_block2):
@@ -81,11 +90,10 @@ class RTLDABStep(gr.hier_block2):
         self.connect((self.rtlsdr_source, 0), (self.tunetest, 0), (self, 0))
         self.connect((self.rtlsdr_source, 0), (self, 1))
 
-        #self.freq1 = 100e6
-        #self.freq1 = 178352000
-        self.freq1 = 220352000
-        self.freq2 = 222064000
-        #self.freq2 = 178352001
+        #self.freq1 = 220352000
+        self.freq1 = 222064000
+
+        self.freq2 = 178352000 # Berlin
 
         self.rtlsdr_source.set_center_freq(self.freq1, 0)
         self.state = False
@@ -102,7 +110,7 @@ class RTLDABStep(gr.hier_block2):
                 self.rtlsdr_source.set_center_freq(self.freq2, 0)
             self.state = not self.state
         except Exception, e:
-            print "Vector sink fullness notification exception: ", e
+            print e
         finally:
             self.d_mutex.release()
 
