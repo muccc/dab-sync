@@ -11,6 +11,11 @@ import numpy
 import os
 import getopt
 import matplotlib.pyplot as plt
+from pyqtgraph.Qt import QtGui, QtCore
+import numpy as np
+import pyqtgraph as pg
+import time
+
 
 options, remainder = getopt.getopt(sys.argv[1:], 'r:f:', [
                                                          'rate=',
@@ -32,7 +37,30 @@ for opt, arg in options:
 dp = parameters.dab_parameters(1, sample_rate)
 prs = make_prs.modulate_prs(sample_rate, True)
 frame_length = int(sample_rate * 96e-3)
+#QtGui.QApplication.setGraphicsSystem('raster')
+app = QtGui.QApplication([])
+#mw = QtGui.QMainWindow()
+#mw.resize(800,800)
 
+win = pg.GraphicsWindow(title="PRS Tracking")
+win.resize(1000,600)
+win.setWindowTitle('PRS Tracking')
+
+# Enable antialiasing for prettier plots
+pg.setConfigOptions(antialias=True)
+
+p1 = win.addPlot(title="Updating plot")
+curve1 = p1.plot(pen='y')
+
+p2 = win.addPlot(title="Updating plot")
+curve2 = p2.plot(pen='y')
+def update1(data):
+    global curve1, curve2
+    curve1.setData(data)
+
+def update2(data):
+    global curve2
+    curve2.setData(data[-100:])
 
 for pair in remainder:
     filename = pair.split()[0]
@@ -117,6 +145,11 @@ for pair in remainder:
             print "instant_frame_length:", instant_frame_length
             lenghts.append(instant_frame_length)
             print i, "% .03f" % (absolute_start - prev_absolute_start - frame_length)
+            if i % 10 == 0:
+                update1(lenghts)
+                #QtGui.QApplication.instance().processEvents()
+            update2(lenghts)
+            QtGui.QApplication.instance().processEvents()
         prev_absolute_start = absolute_start
 
         P = 0.2
@@ -158,4 +191,4 @@ for start in multi_starts[1:]:
     print diff, (diff / (estimated_frame_length/196608*2048000))
     plt.plot(diffs[:])
 plt.show()
-
+#QtGui.QApplication.instance().exec_()
