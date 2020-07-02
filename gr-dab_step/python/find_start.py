@@ -13,7 +13,6 @@ def find_start(signal, sample_rate = 2000000):
 
     input_low_pass = scipy.signal.firwin(13, 1000./sample_rate)
 
-    count = 100e-3 * sample_rate
     signal_mag = numpy.abs(signal)
     signal_mag_filtered = scipy.signal.fftconvolve(signal_mag, input_low_pass, mode='same')
     level = numpy.average(signal_mag_filtered)
