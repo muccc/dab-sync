@@ -3,8 +3,9 @@
 ##################################################
 # GNU Radio Python Flow Graph
 # Title: Top Block
-# Generated: Sun Nov  4 00:36:15 2018
+# Generated: Sun Jun 21 16:09:21 2020
 ##################################################
+
 
 from gnuradio import blocks
 from gnuradio import eng_notation
@@ -49,16 +50,12 @@ class top_block(gr.top_block):
 
         self.dab_step_tune_timer_0 = dab_step.tune_timer()
         self.dab_step_dab_sync_cpp_0 = dab_step.dab_sync_cpp(samp_rate, parameters.fft_length, parameters.cp_length, modulated_prs)
-        self.blocks_tag_debug_0 = blocks.tag_debug(gr.sizeof_gr_complex*1, '', ""); self.blocks_tag_debug_0.set_display(True)
         self.blocks_null_sink_0 = blocks.null_sink(gr.sizeof_gr_complex*1)
-
-
 
         ##################################################
         # Connections
         ##################################################
         self.msg_connect((self.dab_step_tune_timer_0, 'command'), (self.osmosdr_source_0, 'command'))
-        self.connect((self.dab_step_dab_sync_cpp_0, 0), (self.blocks_tag_debug_0, 0))
         self.connect((self.dab_step_dab_sync_cpp_0, 0), (self.dab_step_tune_timer_0, 0))
         self.connect((self.dab_step_tune_timer_0, 0), (self.blocks_null_sink_0, 0))
         self.connect((self.osmosdr_source_0, 0), (self.dab_step_dab_sync_cpp_0, 0))
